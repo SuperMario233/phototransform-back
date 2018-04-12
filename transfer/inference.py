@@ -23,8 +23,17 @@ parser.add_argument("--forward_saved", type=str, default="NULL",
                     help="the path of the pre-trained forward networks. (NULL: online loading)")
 parser.add_argument("--inverse_saved", type=str, required=True,
                     help="the path of the pre-trained inverse networks.")
+parser.add_argument("--gpuid", type=int, default=-1,
+                    help="the gpu device to be used(default -1 means cpu).")
 args = parser.parse_args()
 
+args.cuda = (args.gpuid != -1)
+#set device.
+if args.cuda:
+    assert torch.cuda.is_available() == True
+    cuda.set_device(args.gpuid)
+    torch.cuda.manual_seed_all(args.seed)
+    
 ###############################################################################
 #Loading Pictures(content and style)...
 ###############################################################################
@@ -40,6 +49,17 @@ else:
     forwardNet = torch.load(args.forward_saved)
 inverseNet = torch.load(args.inverse_saved)
 
+if args.cuda():
+    #model
+    forwardNet = forwardNet.cuda()
+    inverseNet = InverseNet.cuda()
+    #data
+    content = content.cuda()
+    style = style.cuda()
+
+forwardNet.eval()
+inverseNet.eval()
+
 ###############################################################################
 #Inference...
 ###############################################################################
@@ -47,13 +67,15 @@ inverseNet = torch.load(args.inverse_saved)
 style = Variable(style, requires_grad=False).unsqueeze(0)
 style_feature = forwardNet(style)
 style_feature = style_feature.squeeze(0)
-style_swap = StyleSwap(style_feature, args.patch_size)
+style_swap = StyleSwap(style_feature, args.patch_size, cuda=args.cuda)
+if args.cuda():
+    style_swap = style_swap.cuda()
 
 content = Variable(style, requires_grad=False).unsqueeze(0)
 content_feature = forwardNet(content)
 #do feature style swap.
 feature_swapped = style_swap(content_feature)
 #decode to get img.
-target_img = inverseNet(feature_swapped).squeeze(0)
+target_img = inverseNet(feature_swapped).squeeze(0).cpu()
 
 save_image(target_img, args.save)

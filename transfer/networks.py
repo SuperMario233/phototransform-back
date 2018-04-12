@@ -58,7 +58,14 @@ class InverseNet(nn.Module):
         self.slice.add_module(str(12), InstanceNorm2d(64, affine=True))
         self.slice.add_module(str(13), ReLU())
         self.slice.add_module(str(14), Conv2d(64, 3, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1)))
+        
+        self.init_weights()
 
+    def init_weights(self):
+        initrange = 0.1
+        for param in self.slice.parameters():
+            param.data.uniform_(-initrange, initrange)
+        
     def forward(self, x):
         return self.slice(x)
 
@@ -88,14 +95,14 @@ class UpsampleConvLayer(nn.Module):
 """
 
 class StyleSwap(nn.Module):
-    def __init__(self, style_img, patch_size, stride=1, shuffle=False, interpolate=True):
+    def __init__(self, style_img, patch_size, stride=1, shuffle=False, interpolate=True, cuda=False):
         super(StyleSwap, self).__init__()
         self.style_img = style_img
         self.patch_size = patch_size
         self.stride = stride
         self.shuffle = shuffle
         self.interpolate = interpolate
-        
+        self.use_cuda = cuda
         #patches extracted from the style_image
         self.patches = self.getPatch(self.style_img)
         #convolution function used for style transferring.
@@ -183,5 +190,7 @@ class StyleSwap(nn.Module):
             output.squeeze(0)
 
         output = Variable(output, requires_grad=False)
+        if self.use_cuda:
+            output = output.cuda()
 
         return output
