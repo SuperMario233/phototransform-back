@@ -31,10 +31,11 @@ def save_image(imgTensor, filename):
     return
 
 def img2Tensor(img, image_size=None):
+    img = img.convert("RGB")
     if image_size:
         img = transforms.Resize(image_size)(img)
     tensor = transforms.ToTensor()(img)
-    return img
+    return tensor
 
 class Dataset(data.Dataset):
     def __init__(self, folderPath, image_size=256):
@@ -47,7 +48,7 @@ class Dataset(data.Dataset):
             transforms.ToTensor(),
         ])
         self.image_list = [x for x in listdir(folderPath) if is_image_file(x)]
-    
+
     def __getitem__(self, index):
         img_path = os.path.join(self.folderpath, self.image_list[index])
         img = load_image(img_path)
