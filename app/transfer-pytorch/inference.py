@@ -3,9 +3,10 @@ import os
 
 import torch
 import torch.nn as nn
+from torch.autograd import Variable
 
-from loadData import Dataset, load_image, save_image
-from networks import ForwardNet, InverseNet, StyleSwap, img2Tensor
+from loadData import Dataset, load_image, save_image, img2Tensor
+from networks import ForwardNet, InverseNet, StyleSwap
 
 parser = argparse.ArgumentParser(description="Style Transfer")
 
@@ -33,7 +34,7 @@ if args.cuda:
     assert torch.cuda.is_available() == True
     cuda.set_device(args.gpuid)
     torch.cuda.manual_seed_all(args.seed)
-    
+
 ###############################################################################
 #Loading Pictures(content and style)...
 ###############################################################################
@@ -46,10 +47,10 @@ style = img2Tensor(load_image(args.style), image_size=args.image_size)
 if args.forward_saved=="NULL":
     forwardNet = ForwardNet(pretrain=True)
 else:
-    forwardNet = torch.load(args.forward_saved)
-inverseNet = torch.load(args.inverse_saved)
+    forwardNet = torch.load(args.forward_saved, map_location=lambda storage, loc: storage)
+inverseNet = torch.load(args.inverse_saved, map_location=lambda storage, loc: storage)
 
-if args.cuda():
+if args.cuda:
     #model
     forwardNet = forwardNet.cuda()
     inverseNet = InverseNet.cuda()
@@ -68,14 +69,15 @@ style = Variable(style, requires_grad=False).unsqueeze(0)
 style_feature = forwardNet(style)
 style_feature = style_feature.squeeze(0)
 style_swap = StyleSwap(style_feature, args.patch_size, cuda=args.cuda)
-if args.cuda():
+if args.cuda:
     style_swap = style_swap.cuda()
 
-content = Variable(style, requires_grad=False).unsqueeze(0)
+content = Variable(content, requires_grad=False).unsqueeze(0)
 content_feature = forwardNet(content)
 #do feature style swap.
 feature_swapped = style_swap(content_feature)
 #decode to get img.
 target_img = inverseNet(feature_swapped).squeeze(0).cpu()
+target_img = target_img.data
 
 save_image(target_img, args.save)

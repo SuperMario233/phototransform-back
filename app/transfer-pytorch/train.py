@@ -75,7 +75,7 @@ if args.cuda:
     forwardNet = forwardNet.cuda()
     inverseNet = inverseNet.cuda()
 
-args.save = '{}-{}'.format(args.save, time.strftime("%d-%H%M"))
+args.save = '{}-{}-'.format(args.save, time.strftime("%d-%H%M"))
 
 ###############################################################################
 #Define Loss and Optimizer...
@@ -107,7 +107,7 @@ for epoch in range(args.epochs):
             style_swap = style_swap.cuda()
 
         for j, content in enumerate(train_content_loader):
-            
+
             optimizer.zero_grad()
             content = Variable(content, requires_grad=False)
             if args.gpuid != -1:
@@ -120,7 +120,7 @@ for epoch in range(args.epochs):
             inversed_content_styled = inverseNet(feature_styled)
             #print("inversed_pic_size:", inversed_content_styled.size())
             inversed_feature_styled = forwardNet(inversed_content_styled)
-            
+
             loss = loss_func(inversed_feature_styled, feature_styled) + tv_loss(inversed_content_styled)
             loss /= content.size(0)
 
@@ -131,7 +131,7 @@ for epoch in range(args.epochs):
             if(cnt%args.log_interval == 0):
                 print("Current Epoch:{} | Batches_Cnt:{} | Style_Idx:{} | Content_Idx:{} | Loss:{}".format(epoch, cnt, i, j, loss))
     #save inverseNet.
-    torch.save(inverseNet, os.path.join(args.save, 'inverse_model.pt'))
+    torch.save(inverseNet, args.save+'inverse_model.pt'))
 
 
 if __name__ == "__main__":
