@@ -1,0 +1,4 @@
+模型部署sample
+
+模型和部署相关flask代码已经放在服务器上了，可以到目录~/styleswap/下python app.py运行，
+然后本地运行python client.py测试结果。
