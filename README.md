@@ -17,6 +17,8 @@ manage.py 用于启动服务器
 
 详细参考自 https://blog.csdn.net/yannanxiu/article/details/52192849
 
-### UPDATE 2018.05.24 By Qiuls
+### UPDATE 2018.05.24 
+
+By Qiuls
 
 app/model_deplot/ 下放了模型部署的sample，模型和code已经放在服务器上，可参考README运行。
