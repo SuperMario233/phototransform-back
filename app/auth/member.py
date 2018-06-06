@@ -1,7 +1,8 @@
 # coding=utf-8
 from flask import request, jsonify
 from app.models.member import Member, MemberLog
-from app.auth import auth
+from app.auth import auth, sessionKey2Username
+from app.auth.authorize import authorize
 from app import db
 import datetime
 
@@ -24,6 +25,8 @@ def sign_in():
                 statusCode="401"
             ))
         else:
+            sessionKey = getSessionKey(username)
+            sessionKey2Username[sessionKey] = username
             return jsonify(dict(
                 statusCode="200",
                 sessionKey=""
@@ -51,6 +54,8 @@ def sign_up():
                 statusCode="401"
             ))
         else:
+            sessionKey = generateNewSessionKey(username)
+            sessionKey2Username[sessionKey] = username
             session.add(Member(
                 username=username,
                 password=pwd,
@@ -71,7 +76,7 @@ def sign_up():
                 sessionKey=""
             ))
 
-
+@authorize
 @auth.route('/modify-user', methods=['POST'])
 def modify_user():
     username = request.values.get('userName')
@@ -124,3 +129,50 @@ def modify_user():
                 statusCode="200",
                 sessionKey=""
             ))
+
+@authorize
+@auth.route('/get-userinfo', methods=['POST'])
+def get_userinfo():
+    sessionKey = request.values.get("sessionKey")
+    username = sessionKey2Username.get(sessionKey)
+
+    with db.Session() as session:
+
+        members = session.query(Member).filter(db.and_(
+            Member.username == username
+        )).all()
+
+        # todo 定义新的两个model
+        histories = session.query(MemberUseLog).filter(db.and_(
+            MemberUserLog.username == username
+        )).all()
+
+        favorites = session.query(MemberStar).filter(db.and_(
+            MemberStar.username == username
+        )).all()
+
+        if len(members) == 0:
+            return jsonify(dict(
+                statusCode="400"
+            ))
+        else:
+            member = members[0]
+
+            return jsonify(dict(
+                statusCode="200",
+                nickName=member.nickname,
+                portrait=member.portrait,
+                sex=member.sex,
+                history='\t'.join(list(map(lambda history: history.fil_id, histories))),
+                favority='\t'.join(list(map(lambda favorite: favorite.fil_id, favorites)))
+            ))
+
+
+
+# todo 根据username获取sessionKey
+def getSessionKey(username):
+    return sessionKey
+
+# todo
+def generateSessionKey(username):
+    return sessionKey
